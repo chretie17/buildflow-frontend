@@ -5,6 +5,9 @@ import Dashboard from './pages/Dashboard';
 import ManageUsers from './pages/ManageUsers';
 import Sidebar from './components/Sidebar';
 import AdminProjectPage from './pages/Projects';
+import TaskManagement from './pages/Tasks';
+import AssignedProject from './pages/AssignedProject';
+import AssignedTasks from './pages/YourTasks';
 
 // Layout component that includes the sidebar and main content
 const Layout = ({ children }) => {
@@ -35,6 +38,9 @@ const App = () => {
                 <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
                 <Route path="/users" element={<Layout><ManageUsers /></Layout>} />
                 <Route path="/projects" element={<Layout><AdminProjectPage /></Layout>} />
+                <Route path="/tasks" element={<Layout><TaskManagement /></Layout>} />
+                <Route path="/assignedproject" element={<Layout><AssignedProject /></Layout>} />
+                <Route path="/assignedtask" element={<Layout><AssignedTasks /></Layout>} />
             </Routes>
         </Router>
     );

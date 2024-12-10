@@ -11,10 +11,12 @@ const Sidebar = () => {
       { path: '/dashboard', label: 'Dashboard' },
       { path: '/users', label: 'Manage Users' },
       { path: '/projects', label: 'Projects' },
+      { path: '/tasks', label: 'Tasks' },
     ],
     member: [
       { path: '/dashboard', label: 'Dashboard' },
-      { path: '/projects', label: 'Projects' },
+      { path: '/assignedproject', label: 'Your Projects' },
+      { path: '/assignedtask', label: 'Your Tasks' },
     ],
   };
 

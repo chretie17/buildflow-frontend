@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import api from '../api'; // Import your axios instance
-import { Snackbar, Alert, CircularProgress } from '@mui/material';
+import api from '../api';
+import { Snackbar, Alert, CircularProgress, Modal } from '@mui/material';
 
 const AdminProjectPage = () => {
   const [projects, setProjects] = useState([]);
-  const [users, setUsers] = useState([]); // To fetch users from DB (only members)
+  const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
     project_name: '',
     description: '',
@@ -14,24 +14,21 @@ const AdminProjectPage = () => {
     budget: '',
     project_manager: '',
     location: '',
-    assigned_user: '', // Single user (user_id)
-    images: [], // Multiple images
+    assigned_user: '',
+    images: [],
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
-
-  // Snackbar state for error messages
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  // Loading state
   const [loading, setLoading] = useState(true);
+  const [openModal, setOpenModal] = useState(false);
+  const [projectImages, setProjectImages] = useState([]);
 
   useEffect(() => {
-    // Fetch all projects
     api.get('/projects')
       .then((response) => {
-        setProjects(response.data || []); // Ensure projects is always an array
+        setProjects(response.data || []);
         setLoading(false);
       })
       .catch((error) => {
@@ -41,9 +38,9 @@ const AdminProjectPage = () => {
         console.error('Error fetching projects:', error);
       });
 
-      api.get('/projects/users')
+    api.get('/projects/users')
       .then((response) => {
-        setUsers(response.data || []); // Assuming response.data is an array of users
+        setUsers(response.data || []);
       })
       .catch((error) => {
         setErrorMessage('Error fetching users');
@@ -64,7 +61,7 @@ const AdminProjectPage = () => {
     const { files } = e.target;
     setFormData({
       ...formData,
-      images: Array.from(files), // Save all selected files
+      images: Array.from(files),
     });
   };
 
@@ -72,11 +69,9 @@ const AdminProjectPage = () => {
     const { value } = e.target;
     setFormData({
       ...formData,
-      assigned_user: value, // Store user_id of the selected user
+      assigned_user: value,
     });
   };
-  
-  
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -88,12 +83,11 @@ const AdminProjectPage = () => {
           projectData.append('images', image);
         });
       } else {
-        projectData.append(key, formData[key]);  // This should include assigned_user as user.id
+        projectData.append(key, formData[key]);
       }
     });
   
     if (isEditing) {
-      // Update the project
       api.put(`/projects/${editingProject.id}`, projectData)
         .then((response) => {
           alert('Project updated successfully');
@@ -110,7 +104,6 @@ const AdminProjectPage = () => {
           console.error('Error updating project:', error);
         });
     } else {
-      // Create new project
       api.post('/projects', projectData)
         .then((response) => {
           alert('Project added successfully');
@@ -124,7 +117,6 @@ const AdminProjectPage = () => {
         });
     }
   };
-  
   
   const resetForm = () => {
     setFormData({
@@ -168,9 +160,27 @@ const AdminProjectPage = () => {
       budget: project.budget,
       project_manager: project.project_manager,
       location: project.location,
-      assigned_user: project.assigned_user || '', // User ID of assigned user
-      images: [], // Clear image field for editing
+      assigned_user: project.assigned_user || '',
+      images: [],
     });
+  };
+
+  const handleViewImages = (projectId) => {
+    api.get(`/projects/${projectId}/images`)
+      .then((response) => {
+        setProjectImages(response.data.images || []);
+        setOpenModal(true);
+      })
+      .catch((error) => {
+        setErrorMessage('Error fetching project images');
+        setOpenSnackbar(true);
+        console.error('Error fetching project images:', error);
+      });
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setProjectImages([]);
   };
 
   const handleCloseSnackbar = () => {
@@ -179,192 +189,243 @@ const AdminProjectPage = () => {
 
   if (loading) {
     return (
-      <div className="p-6 text-center">
-        <CircularProgress />
-        <p>Loading projects...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
+        <CircularProgress className="mb-4" />
+        <p className="text-gray-600 text-lg">Loading projects...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-4">Admin Project Management</h1>
+    <div className="bg-gray-50 min-h-screen p-8">
+      <div className="max-w-7xl mx-auto bg-white shadow-xl rounded-xl p-8">
+        <h1 className="text-4xl font-extrabold text-gray-800 mb-6 border-b-4 border-blue-500 pb-4">
+          Admin Project Management
+        </h1>
 
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-2">{isEditing ? 'Update Project' : 'Add New Project'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="project_name"
-            value={formData.project_name}
-            onChange={handleInputChange}
-            placeholder="Project Name"
-            className="w-full p-2 border rounded"
-            required
-          />
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleInputChange}
-            placeholder="Description"
-            className="w-full p-2 border rounded"
-            required
-          />
-          <input
-            type="date"
-            name="start_date"
-            value={formData.start_date}
-            onChange={handleInputChange}
-            className="w-full p-2 border rounded"
-            required
-          />
-          <input
-            type="date"
-            name="end_date"
-            value={formData.end_date}
-            onChange={handleInputChange}
-            className="w-full p-2 border rounded"
-            required
-          />
-          <input
-            type="number"
-            name="budget"
-            value={formData.budget}
-            onChange={handleInputChange}
-            placeholder="Budget"
-            className="w-full p-2 border rounded"
-            required
-          />
-          <input
-            type="text"
-            name="location"
-            value={formData.location}
-            onChange={handleInputChange}
-            placeholder="Location"
-            className="w-full p-2 border rounded"
-            required
-          />
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleInputChange}
-            className="w-full p-2 border rounded"
-            required
-          >
-            <option value="planning">Planning</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="delayed">Delayed</option>
-          </select>
-          <input
-            type="file"
-            name="images"
-            onChange={handleFileChange}
-            className="w-full p-2 border rounded"
-            multiple
-          />
-         <select
-  name="assigned_user"
-  value={formData.assigned_user}
-  onChange={handleUserChange}
-  className="w-full p-2 border rounded"
-  required
->
-  <option value="">Select User</option>
-  {users.map((user) => (
-    <option key={user.id} value={user.id}> {/* Use user.id */}
-      {user.username} {/* Displaying the username */}
-    </option>
-  ))}
-</select>
+        {/* Project Form */}
+        <div className="bg-gray-100 rounded-lg p-6 mb-8 shadow-md">
+          <h2 className="text-2xl font-semibold mb-6 text-gray-700">
+            {isEditing ? 'Update Project' : 'Add New Project'}
+          </h2>
+          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
+            <input
+              type="text"
+              name="project_name"
+              value={formData.project_name}
+              onChange={handleInputChange}
+              placeholder="Project Name"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            />
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              placeholder="Description"
+              className="w-full p-3 border border-gray-300 rounded-lg col-span-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              rows={3}
+              required
+            />
+            <div className="space-y-4">
+              <label className="block text-gray-700">Start Date</label>
+              <input
+                type="date"
+                name="start_date"
+                value={formData.start_date}
+                onChange={handleInputChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                required
+              />
+            </div>
+            <div className="space-y-4">
+              <label className="block text-gray-700">End Date</label>
+              <input
+                type="date"
+                name="end_date"
+                value={formData.end_date}
+                onChange={handleInputChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                required
+              />
+            </div>
+            <input
+              type="number"
+              name="budget"
+              value={formData.budget}
+              onChange={handleInputChange}
+              placeholder="Budget"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            />
+            <input
+              type="text"
+              name="location"
+              value={formData.location}
+              onChange={handleInputChange}
+              placeholder="Location"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            />
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            >
+              <option value="planning">Planning</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="delayed">Delayed</option>
+            </select>
+            <input
+              type="file"
+              name="images"
+              onChange={handleFileChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              multiple
+            />
+            <select
+              name="assigned_user"
+              value={formData.assigned_user}
+              onChange={handleUserChange}
+              className="w-full p-3 border border-gray-300 rounded-lg col-span-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            >
+              <option value="">Select User</option>
+              {users.map((user) => (
+                <option key={user.user_id} value={user.user_id}>
+                  {user.username}
+                </option>
+              ))}
+            </select>
+            <button 
+              type="submit" 
+              className="col-span-2 bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105 shadow-md"
+            >
+              {isEditing ? 'Update Project' : 'Add Project'}
+            </button>
+          </form>
+        </div>
 
+        {/* Projects Table */}
+        <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+          <h2 className="text-2xl font-semibold p-6 bg-gray-100 text-gray-700">Projects</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-200">
+                <tr>
+                  <th className="p-4 text-left text-gray-600">Project Name</th>
+                  <th className="p-4 text-left text-gray-600">Status</th>
+                  <th className="p-4 text-left text-gray-600">Location</th>
+                  <th className="p-4 text-left text-gray-600">Start Date</th>
+                  <th className="p-4 text-left text-gray-600">End Date</th>
+                  <th className="p-4 text-left text-gray-600">Budget</th>
+                  <th className="p-4 text-left text-gray-600">Assigned User</th>
+                  <th className="p-4 text-left text-gray-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {projects.length > 0 ? (
+                  projects.map((project) => (
+                    <tr key={project.id} className="border-b hover:bg-gray-50 transition duration-200">
+                      <td className="p-4">{project.project_name}</td>
+                      <td className="p-4">
+                        <span className={`px-3 py-1 rounded-full text-sm ${
+                          project.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          project.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                          project.status === 'delayed' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {project.status}
+                        </span>
+                      </td>
+                      <td className="p-4">{project.location}</td>
+                      <td className="p-4">{project.start_date}</td>
+                      <td className="p-4">{project.end_date}</td>
+                      <td className="p-4">{project.budget}</td>
+                      <td className="p-4">{project.assigned_user}</td>
+                      <td className="p-4 space-x-2">
+                        <button
+                          onClick={() => handleViewImages(project.id)}
+                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition mr-2"
+                        >
+                          Images
+                        </button>
+                        <button
+                          onClick={() => handleEdit(project)}
+                          className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition mr-2"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(project.id)}
+                          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="8" className="p-4 text-center text-gray-500">
+                      No projects found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-          <button type="submit" className="bg-blue-500 text-white p-2 rounded">
-            {isEditing ? 'Update Project' : 'Add Project'}
-          </button>
-        </form>
-      </div>
-
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Projects</h2>
-        <table className="min-w-full bg-white border border-gray-200">
-  <thead>
-    <tr>
-      <th className="border p-2">Project Name</th>
-      <th className="border p-2">Status</th>
-      <th className="border p-2">Location</th>
-      <th className="border p-2">Start Date</th>
-      <th className="border p-2">End Date</th>
-      <th className="border p-2">Budget</th>
-      <th className="border p-2">Assigned User</th>
-      <th className="border p-2">Images</th>
-      <th className="border p-2">Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {projects.length > 0 ? (
-      projects.map((project) => (
-        <tr key={project.id}>
-          <td className="border p-2">{project.project_name}</td>
-          <td className="border p-2">{project.status}</td>
-          <td className="border p-2">{project.location}</td>
-          <td className="border p-2">{project.start_date}</td>
-          <td className="border p-2">{project.end_date}</td>
-          <td className="border p-2">{project.budget}</td>
-          <td className="border p-2">{project.assigned_user}</td>
-          <td className="border p-2">
-            {project.images && project.images.length > 0 ? (
-              <div>
-                {project.images.map((image, index) => (
-                  <img
-                    key={index}
-                    src={image}
-                    alt={`project-image-${index}`}
-                    className="w-20 h-20 object-cover m-1"
+        {/* Modal for images */}
+        <Modal open={openModal} onClose={handleCloseModal}>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-8 rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-4">Project Images</h2>
+            <div className="grid grid-cols-3 gap-6">
+          
+              {projectImages.length === 0 ? (
+                <p className="col-span-3 text-center text-gray-500">No images available for this project</p>
+              ) : (
+                projectImages.map((image, index) => (
+                  <img 
+                    key={index} 
+                    src={image} 
+                    alt={`Project Image ${index}`} 
+                    className="w-full h-48 object-cover rounded-lg shadow-md hover:scale-105 transition duration-300"
                   />
-                ))}
-              </div>
-            ) : (
-              <p>No images available</p>
-            )}
-          </td>
-          <td className="border p-2">
-            <button
-              onClick={() => handleEdit(project)}
-              className="text-blue-500"
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => handleDelete(project.id)}
-              className="text-red-500 ml-4"
-            >
-              Delete
-            </button>
-          </td>
-        </tr>
-      ))
-    ) : (
-      <tr>
-        <td colSpan="10" className="border p-2 text-center">
-          No projects found.
-        </td>
-      </tr>
-    )}
-  </tbody>
-</table>
+                ))
+              )}
+            </div>
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={handleCloseModal}
+                className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </Modal>
 
+        {/* Snackbar for error messages */}
+        <Snackbar
+          open={openSnackbar}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <Alert 
+            onClose={handleCloseSnackbar} 
+            severity="error" 
+            className="bg-red-50 text-red-900 font-medium"
+          >
+            {errorMessage}
+          </Alert>
+        </Snackbar>
       </div>
-
-      <Snackbar
-        open={openSnackbar}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-      >
-        <Alert onClose={handleCloseSnackbar} severity="error">
-          {errorMessage}
-        </Alert>
-      </Snackbar>
     </div>
   );
 };
