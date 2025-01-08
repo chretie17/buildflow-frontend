@@ -204,6 +204,7 @@ const ManageUsers = () => {
                     }}
                 >
                     <option value="member">Member</option>
+                    <option value="engineer">Engineer</option>
                     <option value="admin">Admin</option>
                 </select>
                 <button

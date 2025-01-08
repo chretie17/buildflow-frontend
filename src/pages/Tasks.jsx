@@ -1,39 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api'; // Assuming you have an API utility for making HTTP requests
+import api from '../api';
 
 const TaskManagement = () => {
-  const [tasks, setTasks] = useState([]); // Store tasks
+  const [tasks, setTasks] = useState([]);
   const [task, setTask] = useState({
     title: '',
     description: '',
     assigned_user: '',
     start_date: '',
-    start_time: '',
     end_date: '',
-    end_time: '',
     status: 'Pending',
     priority: 'Medium',
     project_id: '',
     created_by: '',
-  }); // Task state (used for both create and edit)
-  const [users, setUsers] = useState([]); // List of users for assignment
-  const [projects, setProjects] = useState([]); // List of projects
-  const [loading, setLoading] = useState(true); // Loading state for API requests
-  const [error, setError] = useState(''); // Error message state
-  const [editMode, setEditMode] = useState(false); // Whether we are editing a task
-  const [currentTaskId, setCurrentTaskId] = useState(null); // Task ID for editing
+  });
+  const [users, setUsers] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [editMode, setEditMode] = useState(false);
+  const [currentTaskId, setCurrentTaskId] = useState(null);
 
-  // Fetch tasks from API
+  // All the existing fetch functions and handlers remain the same
   const fetchTasks = async () => {
     try {
       const response = await api.get('/tasks');
       const formattedTasks = response.data.map((task) => ({
         ...task,
         start_date: task.start_date
-          ? new Date(task.start_date).toISOString().slice(0, 16) // Format for datetime-local
+          ? new Date(task.start_date).toISOString().slice(0, 16)
           : '',
         end_date: task.end_date
-          ? new Date(task.end_date).toISOString().slice(0, 16) // Format for datetime-local
+          ? new Date(task.end_date).toISOString().slice(0, 16)
           : '',
       }));
       setTasks(formattedTasks);
@@ -43,8 +41,7 @@ const TaskManagement = () => {
       setLoading(false);
     }
   };
-  
-  // Fetch users from API
+
   const fetchUsers = async () => {
     try {
       const response = await api.get('/tas/users');
@@ -54,7 +51,6 @@ const TaskManagement = () => {
     }
   };
 
-  // Fetch projects from API
   const fetchProjects = async () => {
     try {
       const response = await api.get('/tas/projects');
@@ -64,38 +60,28 @@ const TaskManagement = () => {
     }
   };
 
-  // Fetch a specific task if we are editing
   const fetchTask = async (taskId) => {
     try {
       const response = await api.get(`/tasks/${taskId}`);
       setTask(response.data);
-      setEditMode(true); // Enable editing mode
-      setCurrentTaskId(taskId); // Set current task ID for update
+      setEditMode(true);
+      setCurrentTaskId(taskId);
     } catch (err) {
       setError('Error fetching task');
     }
   };
 
-  // Initialize and fetch data
   useEffect(() => {
-    // Fetch tasks, users, and projects
     fetchTasks();
     fetchUsers();
     fetchProjects();
-  
-    // Get the user ID (or username) from localStorage
-    const createdBy = localStorage.getItem('id'); // Replace 'id' with the correct key for your user ID
-  
-    // Set the created_by field for new tasks
+    const createdBy = localStorage.getItem('id');
     setTask((prevState) => ({
       ...prevState,
-      created_by: createdBy || prevState.created_by, // Ensure it's set to createdBy if not already set
+      created_by: createdBy || prevState.created_by,
     }));
-  
-  }, []);  // Empty dependency array to run only once when the component mounts
-  
+  }, []);
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setTask((prevState) => ({
@@ -104,22 +90,17 @@ const TaskManagement = () => {
     }));
   };
 
-  // Submit the task form (either create or update)
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
     const combinedTask = {
       ...task,
-      start_date: task.start_date, // datetime-local combines date and time
-      end_date: task.end_date, // datetime-local combines date and time
+      start_date: task.start_date,
+      end_date: task.end_date,
     };
-  
     try {
       if (editMode) {
-        // Update task
         await api.put(`/tasks/${currentTaskId}`, combinedTask);
       } else {
-        // Create new task
         await api.post('/tasks', combinedTask);
       }
       setTask({
@@ -132,193 +113,301 @@ const TaskManagement = () => {
         priority: 'Medium',
         project_id: '',
         created_by: '',
-      }); // Reset form after submit
-      setEditMode(false); // Reset edit mode after submission
-      setCurrentTaskId(null); // Reset current task ID
-      fetchTasks(); // Refresh task list after submit
+      });
+      setEditMode(false);
+      setCurrentTaskId(null);
+      fetchTasks();
     } catch (err) {
       setError('Error saving task');
     }
   };
-  
-  // Delete task
+
   const handleDelete = async (taskId) => {
     try {
       await api.delete(`/tasks/${taskId}`);
-      setTasks(tasks.filter((task) => task.id !== taskId)); // Remove task from state
+      setTasks(tasks.filter((task) => task.id !== taskId));
     } catch (err) {
       setError('Error deleting task');
     }
   };
 
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'High':
+        return 'bg-red-100 text-red-800';
+      case 'Medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Low':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Completed':
+        return 'bg-green-100 text-green-800';
+      case 'In Progress':
+        return 'bg-blue-100 text-blue-800';
+      case 'Pending':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Task Management</h1>
-
-      {/* Error Message */}
-      {error && <p className="text-red-600">{error}</p>}
-
-      {/* Loading Message */}
-      {loading && <p>Loading tasks...</p>}
-
-      {/* Task Form (Create/Edit) */}
-      <div className="bg-white shadow-md p-6 rounded-lg mb-6">
-        <h2 className="text-xl font-medium mb-4">{editMode ? 'Edit Task' : 'Create Task'}</h2>
-        <form onSubmit={handleSubmit}>
-          <label className="block text-sm font-semibold mb-2">Title:</label>
-          <input
-            type="text"
-            name="title"
-            value={task.title}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
-          />
-
-          <label className="block text-sm font-semibold mb-2">Description:</label>
-          <textarea
-            name="description"
-            value={task.description}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
-          />
-
-          <label className="block text-sm font-semibold mb-2">Assigned User:</label>
-          <select
-            name="assigned_user"
-            value={task.assigned_user}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
-          >
-            <option value="">Select User</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.username}
-              </option>
-            ))}
-          </select>
-
-          <label className="block text-sm font-semibold mb-2">Start Date and Time:</label>
-<input
-  type="datetime-local"
-  name="start_date"
-  value={task.start_date}
-  onChange={handleChange}
-  required
-  className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
-/>
-
-<label className="block text-sm font-semibold mb-2">End Date and Time:</label>
-<input
-  type="datetime-local"
-  name="end_date"
-  value={task.end_date}
-  onChange={handleChange}
-  required
-  className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
-/>
-
-
-          <label className="block text-sm font-semibold mb-2">Status:</label>
-          <select
-            name="status"
-            value={task.status}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
-          >
-            <option value="Pending">Pending</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-          </select>
-
-          <label className="block text-sm font-semibold mb-2">Priority:</label>
-          <select
-            name="priority"
-            value={task.priority}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
-          >
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-          </select>
-
-          <label className="block text-sm font-semibold mb-2">Project:</label>
-          <select
-            name="project_id"
-            value={task.project_id}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
-          >
-            <option value="">Select Project</option>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.project_name}
-              </option>
-            ))}
-          </select>
-
-          
-          <button
-            type="submit"
-            className="bg-blue-500 text-white py-2 px-4 rounded mt-4"
-          >
-            {editMode ? 'Update Task' : 'Create Task'}
-          </button>
-        </form>
-      </div>
-
-      {/* Task List */}
-      {!editMode && !loading && (
-        <div>
-          <h2 className="text-xl font-medium mb-2">Task List</h2>
-          <table className="min-w-full table-auto border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="px-4 py-2 border">Title</th>
-                <th className="px-4 py-2 border">Assigned User</th>
-                <th className="px-4 py-2 border">Status</th>
-                <th className="px-4 py-2 border">Priority</th>
-                <th className="px-4 py-2 border">Project</th>
-                <th className="px-4 py-2 border">Start Date</th>
-                <th className="px-4 py-2 border">End Date</th>
-                <th className="px-4 py-2 border">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-  {tasks.map((task) => (
-    <tr key={task.id}>
-      <td className="px-4 py-2">{task.title}</td>
-      <td className="px-4 py-2">{task.assigned_user}</td>
-      <td className="px-4 py-2">{task.status}</td>
-      <td className="px-4 py-2">{task.priority}</td>
-      <td className="px-4 py-2">{task.project_id}</td>
-      <td className="px-4 py-2">{new Date(task.start_date).toLocaleString()}</td>
-      <td className="px-4 py-2">{new Date(task.end_date).toLocaleString()}</td>
-      <td className="px-4 py-2">
-        <button
-          onClick={() => fetchTask(task.id)}
-          className="bg-yellow-500 text-white py-1 px-2 rounded mr-2"
-        >
-          Edit
-        </button>
-        <button
-          onClick={() => handleDelete(task.id)}
-          className="bg-red-500 text-white py-1 px-2 rounded"
-        >
-          Delete
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
-          </table>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Task Management</h1>
+          {error && (
+            <div className="bg-red-50 text-red-700 px-4 py-2 rounded-md text-sm">
+              {error}
+            </div>
+          )}
         </div>
-      )}
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+          <div className="p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+              {editMode ? 'Edit Task' : 'Create New Task'}
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={task.title}
+                    onChange={handleChange}
+                    required
+                    className="w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 focus:ring-2 focus:ring-[#e05f00] focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assigned User
+                  </label>
+                  <select
+                    name="assigned_user"
+                    value={task.assigned_user}
+                    onChange={handleChange}
+                    required
+                    className="w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 focus:ring-2 focus:ring-[#e05f00] focus:border-transparent"
+                  >
+                    <option value="">Select User</option>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.username}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    value={task.description}
+                    onChange={handleChange}
+                    rows="3"
+                    className="w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 focus:ring-2 focus:ring-[#e05f00] focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Date and Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="start_date"
+                    value={task.start_date}
+                    onChange={handleChange}
+                    required
+                    className="w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 focus:ring-2 focus:ring-[#e05f00] focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    End Date and Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="end_date"
+                    value={task.end_date}
+                    onChange={handleChange}
+                    required
+                    className="w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 focus:ring-2 focus:ring-[#e05f00] focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    name="status"
+                    value={task.status}
+                    onChange={handleChange}
+                    required
+                    className="w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 focus:ring-2 focus:ring-[#e05f00] focus:border-transparent"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Priority
+                  </label>
+                  <select
+                    name="priority"
+                    value={task.priority}
+                    onChange={handleChange}
+                    required
+                    className="w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 focus:ring-2 focus:ring-[#e05f00] focus:border-transparent"
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Project
+                  </label>
+                  <select
+                    name="project_id"
+                    value={task.project_id}
+                    onChange={handleChange}
+                    required
+                    className="w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 focus:ring-2 focus:ring-[#e05f00] focus:border-transparent"
+                  >
+                    <option value="">Select Project</option>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.project_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="bg-[#e05f00] hover:bg-[#ff6c00] text-white px-6 py-2 rounded-md shadow-sm transition-colors duration-200"
+                >
+                  {editMode ? 'Update Task' : 'Create Task'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {!editMode && !loading && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">Task List</h2>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Title
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Assigned User
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Priority
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Project
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Timeline
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {tasks.map((task) => (
+                      <tr key={task.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{task.title}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">{task.assigned_user}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                            {task.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                            {task.priority}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {task.project_id}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            <div>{new Date(task.start_date).toLocaleString()}</div>
+                            <div>{new Date(task.end_date).toLocaleString()}</div>
+                          </div>
+                          </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => fetchTask(task.id)}
+                              className="bg-[#e05f00] hover:bg-[#ff6c00] text-white px-3 py-1 rounded-md shadow-sm transition-colors duration-200 text-sm"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(task.id)}
+                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md shadow-sm transition-colors duration-200 text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {loading && (
+          <div className="flex justify-center items-center h-32">
+            <div className="text-[#e05f00] text-lg">Loading tasks...</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
