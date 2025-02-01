@@ -24,6 +24,8 @@ const AdminProjectPage = () => {
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [projectImages, setProjectImages] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+
 
   useEffect(() => {
     api.get('/projects')
@@ -151,17 +153,25 @@ const AdminProjectPage = () => {
   const handleEdit = (project) => {
     setIsEditing(true);
     setEditingProject(project);
+  
+    // Format dates to YYYY-MM-DD
+    const formatDateForInput = (dateString) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toISOString().split('T')[0];
+    };
+  
     setFormData({
-      project_name: project.project_name,
-      description: project.description,
-      status: project.status,
-      start_date: project.start_date,
-      end_date: project.end_date,
-      budget: project.budget,
-      project_manager: project.project_manager,
-      location: project.location,
+      project_name: project.project_name || '',
+      description: project.description || '',
+      status: project.status || 'planning',
+      start_date: formatDateForInput(project.start_date),
+      end_date: formatDateForInput(project.end_date),
+      budget: project.budget || '',
+      project_manager: project.project_manager || '',
+      location: project.location || '',
       assigned_user: project.assigned_user || '',
-      images: [],
+      images: [], // Keep the existing images array empty for the form
     });
   };
 

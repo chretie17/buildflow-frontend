@@ -8,6 +8,8 @@ import AdminProjectPage from './pages/Projects';
 import TaskManagement from './pages/Tasks';
 import AssignedProject from './pages/AssignedProject';
 import AssignedTasks from './pages/YourTasks';
+import PublicProjectTracking from './pages/PublicProject';
+import ReportsPage from './pages/Reports';
 
 // Layout component that includes the sidebar and main content
 const Layout = ({ children }) => {
@@ -30,6 +32,7 @@ const App = () => {
             <Routes>
                 {/* Default route redirects to login */}
                 <Route path="/" element={<Navigate to="/login" />} />
+                <Route path="/public/project/:projectId" element={<PublicProjectTracking/>} />
 
                 {/* Login page doesn't need the layout */}
                 <Route path="/login" element={<LoginPage />} />
@@ -38,9 +41,11 @@ const App = () => {
                 <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
                 <Route path="/users" element={<Layout><ManageUsers /></Layout>} />
                 <Route path="/projects" element={<Layout><AdminProjectPage /></Layout>} />
+                <Route path="/reports" element={<Layout><ReportsPage /></Layout>} />
                 <Route path="/tasks" element={<Layout><TaskManagement /></Layout>} />
                 <Route path="/assignedproject" element={<Layout><AssignedProject /></Layout>} />
                 <Route path="/assignedtask" element={<Layout><AssignedTasks /></Layout>} />
+
             </Routes>
         </Router>
     );

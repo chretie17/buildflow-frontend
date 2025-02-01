@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
     LayoutDashboard, 
     Users, 
     FolderKanban, 
     CheckSquare, 
     LogOut,
-    ChevronRight,
-    Clock
+    Clock,
+    Flag
 } from 'lucide-react';
 
 const Sidebar = () => {
     const role = localStorage.getItem('role') || 'member';
     const navigate = useNavigate();
+    const location = useLocation();
     const [currentTime, setCurrentTime] = useState(new Date());
     const [userName, setUserName] = useState('User');
 
@@ -21,7 +23,6 @@ const Sidebar = () => {
             setCurrentTime(new Date());
         }, 1000);
 
-        // Get user name from localStorage
         const user = localStorage.getItem('user');
         if (user) {
             const userData = JSON.parse(user);
@@ -33,22 +34,22 @@ const Sidebar = () => {
 
     const links = {
         admin: [
-            { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-            { path: '/users', label: 'Manage Users', icon: <Users className="w-5 h-5" /> },
-            { path: '/projects', label: 'Projects', icon: <FolderKanban className="w-5 h-5" /> },
-            { path: '/tasks', label: 'Tasks', icon: <CheckSquare className="w-5 h-5" /> },
+            { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard /> },
+            { path: '/users', label: 'Manage Users', icon: <Users /> },
+            { path: '/projects', label: 'Projects', icon: <FolderKanban /> },
+            { path: '/tasks', label: 'Tasks', icon: <CheckSquare /> },
+            { path: '/reports', label: 'Reports', icon: <Flag /> }
         ],
         engineer: [
-          { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-          { path: '/projects', label: 'Projects', icon: <FolderKanban className="w-5 h-5" /> },
-          { path: '/tasks', label: 'Tasks', icon: <CheckSquare className="w-5 h-5" /> },
-      ],
-        member: [
-            { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-            { path: '/assignedproject', label: 'Your Projects', icon: <FolderKanban className="w-5 h-5" /> },
-            { path: '/assignedtask', label: 'Your Tasks', icon: <CheckSquare className="w-5 h-5" /> },
+            { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard /> },
+            { path: '/projects', label: 'Projects', icon: <FolderKanban /> },
+            { path: '/tasks', label: 'Tasks', icon: <CheckSquare /> }
         ],
-        
+        member: [
+            { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard /> },
+            { path: '/assignedproject', label: 'Your Projects', icon: <FolderKanban /> },
+            { path: '/assignedtask', label: 'Your Tasks', icon: <CheckSquare /> }
+        ]
     };
 
     const handleLogout = () => {
@@ -58,71 +59,74 @@ const Sidebar = () => {
     };
 
     return (
-<aside className="fixed top-0 left-0 w-64 h-screen bg-gradient-to-br from-gray-800 via-gray-600 to-orange-500 text-white shadow-xl">
-            {/* User Profile Section */}
-            <div className="p-6 border-b border-white/10 bg-white/5 backdrop-blur-sm">
-                <div className="flex flex-col items-center space-y-3">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-2xl font-bold">
+        <motion.aside 
+            initial={{ x: -100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="fixed top-0 left-0 w-64 h-full bg-gray-900 text-gray-100 shadow-lg flex flex-col"
+        >
+            {/* Profile Section */}
+            <div className="p-6 border-b border-gray-800">
+                <motion.div 
+                    className="flex flex-col items-center"
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                >
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 to-pink-600 flex items-center justify-center text-2xl font-bold mb-4 shadow-lg">
                         {userName.charAt(0).toUpperCase()}
                     </div>
-                    <h2 className="text-lg font-semibold text-white">Welcome, {userName}</h2>
-                    <div className="flex items-center space-x-2 text-sm text-gray-300">
-                        <Clock className="w-4 h-4" />
-                        <span>{currentTime.toLocaleTimeString()}</span>
+                    <h2 className="text-lg font-semibold">{userName}</h2>
+                    <div className="flex items-center mt-2 text-sm text-gray-400">
+                        <Clock className="w-4 h-4 mr-2" />
+                        {currentTime.toLocaleTimeString()}
                     </div>
-                </div>
+                </motion.div>
             </div>
 
             {/* Navigation */}
-            <nav className="p-4 mt-4">
+            <nav className="flex-1 py-6 px-4 overflow-y-auto">
                 <ul className="space-y-2">
-                    {links[role]?.map((link) => (
-                        <li key={link.path}>
+                    {links[role]?.map((link, index) => (
+                        <motion.li
+                            key={link.path}
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: index * 0.1 }}
+                        >
                             <Link
                                 to={link.path}
-                                className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 group relative overflow-hidden transition-all duration-300 ease-in-out backdrop-blur-sm"
+                                className={`
+                                    flex items-center px-4 py-3 rounded-lg transition-all duration-200
+                                    ${location.pathname === link.path 
+                                        ? 'bg-gradient-to-r from-orange-600 to-pink-600 text-white' 
+                                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                                    }
+                                `}
                             >
-                                <span className="flex items-center justify-center w-8 group-hover:scale-110 transition-transform duration-300">
+                                <span className="w-5 h-5 mr-3">
                                     {link.icon}
                                 </span>
                                 <span className="font-medium">{link.label}</span>
-                                <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 absolute right-4 transition-all duration-300 transform group-hover:translate-x-1" />
-                                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             </Link>
-                        </li>
+                        </motion.li>
                     ))}
                 </ul>
             </nav>
 
-            {/* Footer with Logout */}
-            <div className="absolute bottom-0 left-0 w-full p-4 bg-black/20 backdrop-blur-sm">
-                <button
+            {/* Logout Button */}
+            <div className="p-4 border-t border-gray-800">
+                <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={handleLogout}
-                    className="flex items-center justify-center w-full space-x-2 px-4 py-3 rounded-lg bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white transition-all duration-300 ease-in-out transform hover:scale-[1.02] shadow-lg group"
+                    className="w-full px-4 py-3 flex items-center justify-center rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors duration-200"
                 >
-                    <LogOut className="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" />
+                    <LogOut className="w-5 h-5 mr-2" />
                     <span className="font-medium">Logout</span>
-                </button>
+                </motion.button>
             </div>
-
-            {/* Animated Background Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-blue-600/10 animate-pulse pointer-events-none" />
-        </aside>
+        </motion.aside>
     );
 };
-
-// Add this to your global CSS or style tag
-const styles = `
-@keyframes gradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-.animate-gradient {
-    background-size: 200% 200%;
-    animation: gradient 15s ease infinite;
-}
-`;
 
 export default Sidebar;
